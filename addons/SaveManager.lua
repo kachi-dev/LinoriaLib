@@ -1,6 +1,7 @@
 local httpService = game:GetService('HttpService')
 
 local SaveManager = {} do
+	SaveManager.Changes = {}
 	SaveManager.Folder = 'LinoriaLibSettings'
 	SaveManager.Ignore = {}
 	SaveManager.Parser = {
@@ -78,6 +79,18 @@ local SaveManager = {} do
 		self:BuildFolderTree()
 	end
 
+	function SaveManager:AddChange(Object)
+		for Idx = #SaveManager.Changes, 1, -1 do
+			local Change = SaveManager.Changes[Idx]
+
+			if Change.Type == Object.Type and Change.Name == Object.Name then
+				table.remove(SaveManager.Changes, Idx)
+			end
+		end
+
+		table.insert(SaveManager.Changes, SaveManager.Parser[Object.Type].Save(Object.Name, Object))
+	end
+
 	function SaveManager:Save(name)
 		if (not name) then
 			return false, 'no config file is selected'
@@ -86,21 +99,8 @@ local SaveManager = {} do
 		local fullPath = self.Folder .. '/settings/' .. name .. '.json'
 
 		local data = {
-			objects = {}
+			objects = SaveManager.Changes
 		}
-
-		for idx, toggle in next, Toggles do
-			if self.Ignore[idx] then continue end
-
-			table.insert(data.objects, self.Parser[toggle.Type].Save(idx, toggle))
-		end
-
-		for idx, option in next, Options do
-			if not self.Parser[option.Type] then continue end
-			if self.Ignore[idx] then continue end
-
-			table.insert(data.objects, self.Parser[option.Type].Save(idx, option))
-		end	
 
 		local success, encoded = pcall(httpService.JSONEncode, httpService, data)
 		if not success then
@@ -122,9 +122,11 @@ local SaveManager = {} do
 		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
 		if not success then return false, 'decode error' end
 
+		SaveManager.Changes = decoded.objects
+
 		for _, option in next, decoded.objects do
 			if self.Parser[option.type] then
-				task.spawn(function() self.Parser[option.type].Load(option.idx, option) end) -- task.spawn() so the config loading wont get stuck.
+				task.spawn(self.Parser[option.type].Load, option.idx, option) -- task.spawn() so the config loading wont get stuck.
 			end
 		end
 
@@ -155,7 +157,6 @@ local SaveManager = {} do
 	function SaveManager:BuildFolderTree()
 		local paths = {
 			self.Folder,
-			self.Folder .. '/themes',
 			self.Folder .. '/settings'
 		}
 

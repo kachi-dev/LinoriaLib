@@ -113,9 +113,9 @@ function Library:SafeCallback(f, ...)
     end;
 end;
 
-function Library:AttemptSave()
+function Library:AttemptSave(Object)
     if Library.SaveManager then
-        Library.SaveManager:Save();
+        Library.SaveManager:AddChange(Object);
     end;
 end;
 
@@ -502,6 +502,7 @@ do
         assert(Info.Default, 'AddColorPicker: Missing default value.');
 
         local ColorPicker = {
+            Name = Idx;
             Value = Info.Default;
             Transparency = Info.Transparency or 0;
             Type = 'ColorPicker';
@@ -1001,7 +1002,7 @@ do
                     RenderStepped:Wait();
                 end;
 
-                Library:AttemptSave();
+                Library:AttemptSave(ColorPicker);
             end;
         end);
 
@@ -1018,7 +1019,7 @@ do
                     RenderStepped:Wait();
                 end;
 
-                Library:AttemptSave();
+                Library:AttemptSave(ColorPicker);
             end;
         end);
 
@@ -1055,7 +1056,7 @@ do
                         RenderStepped:Wait();
                     end;
 
-                    Library:AttemptSave();
+                    Library:AttemptSave(ColorPicker);
                 end;
             end);
         end;
@@ -1098,6 +1099,7 @@ do
         assert(Info.Default, 'AddKeyPicker: Missing default value.');
 
         local KeyPicker = {
+            Name = Idx;
             Value = Info.Default;
             Toggled = false;
             Mode = Info.Mode or 'Toggle'; -- Always, Toggle, Hold
@@ -1224,7 +1226,7 @@ do
             Label.InputBegan:Connect(function(Input)
                 if Input.UserInputType == Enum.UserInputType.MouseButton1 then
                     ModeButton:Select();
-                    Library:AttemptSave();
+                    Library:AttemptSave(KeyPicker);
                 end;
             end);
 
@@ -1362,7 +1364,7 @@ do
                     Library:SafeCallback(KeyPicker.ChangedCallback, Input.KeyCode or Input.UserInputType)
                     Library:SafeCallback(KeyPicker.Changed, Input.KeyCode or Input.UserInputType)
 
-                    Library:AttemptSave();
+                    Library:AttemptSave(KeyPicker);
 
                     Event:Disconnect();
                 end);
@@ -1723,6 +1725,7 @@ do
         assert(Info.Text, 'AddInput: Missing `Text` string.')
 
         local Textbox = {
+            Name = Idx;
             Value = Info.Default or '';
             Numeric = Info.Numeric or false;
             Finished = Info.Finished or false;
@@ -1842,12 +1845,12 @@ do
                 if not enter then return end
 
                 Textbox:SetValue(Box.Text);
-                Library:AttemptSave();
+                Library:AttemptSave(Textbox);
             end)
         else
             Box:GetPropertyChangedSignal('Text'):Connect(function()
                 Textbox:SetValue(Box.Text);
-                Library:AttemptSave();
+                Library:AttemptSave(Textbox);
             end);
         end
 
@@ -1910,6 +1913,7 @@ do
         assert(Info.Text, 'AddInput: Missing `Text` string.')
 
         local Toggle = {
+            Name = Idx;
             Value = Info.Default or false;
             Type = 'Toggle';
 
@@ -2019,7 +2023,7 @@ do
         ToggleRegion.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
                 Toggle:SetValue(not Toggle.Value) -- Why was it not like this from the start?
-                Library:AttemptSave();
+                Library:AttemptSave(Toggle);
             end;
         end);
 
@@ -2052,6 +2056,7 @@ do
         assert(Info.Rounding, 'AddSlider: Missing rounding value.');
 
         local Slider = {
+            Name = Idx;
             Value = Info.Default;
             Min = Info.Min;
             Max = Info.Max;
@@ -2248,7 +2253,7 @@ do
                     RenderStepped:Wait();
                 end;
 
-                Library:AttemptSave();
+                Library:AttemptSave(Slider);
             end;
         end);
 
@@ -2278,6 +2283,7 @@ do
         end;
 
         local Dropdown = {
+            Name = Idx;
             Values = Info.Values;
             Value = Info.Multi and {};
             Multi = Info.Multi;
@@ -2574,7 +2580,7 @@ do
                             Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
                             Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
 
-                            Library:AttemptSave();
+                            Library:AttemptSave(Dropdown);
                         end;
                     end;
                 end);
