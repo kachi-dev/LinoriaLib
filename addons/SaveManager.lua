@@ -80,6 +80,10 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:AddChange(Object)
+		if self.Ignore[Object.Name] then
+			return
+		end
+		
 		for Idx = #SaveManager.Changes, 1, -1 do
 			local Change = SaveManager.Changes[Idx]
 
