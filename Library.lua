@@ -44,6 +44,7 @@ local Library = {
 
     Signals = {};
     ScreenGui = ScreenGui;
+    MinSize = Vector2.new(550, 300);
 };
 
 local RainbowStep = 0
@@ -53,7 +54,7 @@ table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
     RainbowStep = RainbowStep + Delta
 
     if RainbowStep >= (1 / 60) then
-        RainbowStep = 0
+        RainbowStep = 0;
 
         Hue = Hue + (1 / 400);
 
@@ -63,8 +64,8 @@ table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
 
         Library.CurrentRainbowHue = Hue;
         Library.CurrentRainbowColor = Color3.fromHSV(Hue, 0.8, 1);
-    end
-end))
+    end;
+end));
 
 local function GetPlayersString()
     local PlayerList = Players:GetPlayers();
@@ -189,6 +190,91 @@ function Library:MakeDraggable(Instance, Cutoff)
     end)
 end;
 
+function Library:MakeResizable(Instance, MinSize)
+    Instance.Active = true;
+    
+    local ResizerImage_Size = 25;
+	local ResizerImage_HoverTransparency = 0.5;
+
+    local Resizer = Library:Create('Frame', {
+        SizeConstraint = Enum.SizeConstraint.RelativeXX;
+        BackgroundColor3 = Color3.new(0, 0, 0);
+        BackgroundTransparency = 1;
+        BorderSizePixel = 0;
+        Size = UDim2.new(0, 30, 0, 30);
+        Position = UDim2.new(1, -30, 1, -30);
+        Visible = true;
+        ClipsDescendants = true;
+        ZIndex = 1;
+        Parent = Library.ScreenGui;
+    });
+
+    local ResizerImage = Library:Create('ImageButton', {
+        BackgroundColor3 = Library.AccentColor;
+        BackgroundTransparency = 1;
+        BorderSizePixel = 0;
+        Size = UDim2.new(2, 0, 2, 0);
+        Position = UDim2.new(1, -30, 1, -30);
+        ZIndex = 2;
+        Parent = Resizer;
+    });
+
+    local ResizerImageUICorner = Library:Create('UICorner', {
+        CornerRadius = UDim.new(0.5, 0);
+        Parent = ResizerImage;
+    });
+
+    Library:AddToRegistry(ResizerImage, { BackgroundColor3 = 'AccentColor'; });
+
+    Resizer.Size = UDim2.fromOffset(ResizerImage_Size, ResizerImage_Size);
+    Resizer.Position = UDim2.new(1, -ResizerImage_Size, 1, -ResizerImage_Size);
+    MinSize = MinSize or Library.MinSize;
+
+    local OffsetPos;
+    Resizer.Parent = Instance;
+
+    local function FinishResize(Transparency)
+        ResizerImage.Position = UDim2.new();
+        ResizerImage.Size = UDim2.new(2, 0, 2, 0);
+        ResizerImage.Parent = Resizer;
+        ResizerImage.BackgroundTransparency = Transparency;
+        ResizerImageUICorner.Parent = ResizerImage;
+        OffsetPos = nil;
+    end;
+
+    ResizerImage.MouseButton1Down:Connect(function()
+        if not OffsetPos then
+            OffsetPos = Vector2.new(Mouse.X - (Instance.AbsolutePosition.X + Instance.AbsoluteSize.X), Mouse.Y - (Instance.AbsolutePosition.Y + Instance.AbsoluteSize.Y));
+
+            ResizerImage.BackgroundTransparency = 1
+            ResizerImage.Size = UDim2.fromOffset(Library.ScreenGui.AbsoluteSize.X, Library.ScreenGui.AbsoluteSize.Y);
+            ResizerImage.Position = UDim2.new();
+            ResizerImageUICorner.Parent = nil;
+            ResizerImage.Parent = Library.ScreenGui;
+        end;
+    end);
+
+    ResizerImage.MouseMoved:Connect(function()
+        if OffsetPos then		
+            local MousePos = Vector2.new(Mouse.X - OffsetPos.X, Mouse.Y - OffsetPos.Y);
+            local FinalSize = Vector2.new(math.clamp(MousePos.X - Instance.AbsolutePosition.X, MinSize.X, math.huge), math.clamp(MousePos.Y - Instance.AbsolutePosition.Y, MinSize.Y, math.huge));
+            Instance.Size = UDim2.fromOffset(FinalSize.X, FinalSize.Y);
+        end;
+    end);
+
+    ResizerImage.MouseEnter:Connect(function()
+        FinishResize(ResizerImage_HoverTransparency);		
+    end);
+
+    ResizerImage.MouseLeave:Connect(function() 
+        FinishResize(1);
+    end);
+
+    ResizerImage.MouseButton1Up:Connect(function()
+        FinishResize(ResizerImage_HoverTransparency);
+    end);
+end;
+
 function Library:AddToolTip(InfoStr, HoverInstance)
     local X, Y = Library:GetTextBounds(InfoStr, Library.Font, 14);
     local Tooltip = Library:Create('Frame', {
@@ -200,7 +286,7 @@ function Library:AddToolTip(InfoStr, HoverInstance)
         Parent = Library.ScreenGui,
 
         Visible = false,
-    })
+    });
 
     local Label = Library:CreateLabel({
         Position = UDim2.fromOffset(3, 1),
@@ -937,14 +1023,18 @@ do
         end);
 
         DisplayFrame.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
+            if Library:MouseIsOverOpenedFrame() then
+                return;
+            end;
+
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
                 if PickerFrameOuter.Visible then
                     ColorPicker:Hide()
                 else
                     ContextMenu:Hide()
                     ColorPicker:Show()
                 end;
-            elseif Input.UserInputType == Enum.UserInputType.MouseButton2 and not Library:MouseIsOverOpenedFrame() then
+            elseif Input.UserInputType == Enum.UserInputType.MouseButton2 then
                 ContextMenu:Show()
                 ColorPicker:Hide()
             end
@@ -1282,7 +1372,7 @@ do
         end);
 
         Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
-            if (not Picking) then
+            if (not Picking) and (not InputService:GetFocusedTextBox()) then
                 if KeyPicker.Mode == 'Toggle' then
                     local Key = KeyPicker.Value;
 
@@ -1562,7 +1652,7 @@ do
             SubButton.Outer, SubButton.Inner, SubButton.Label = CreateBaseButton(SubButton)
 
             SubButton.Outer.Position = UDim2.new(1, 3, 0, 0)
-            SubButton.Outer.Size = UDim2.fromOffset(self.Outer.AbsoluteSize.X - 2, self.Outer.AbsoluteSize.Y)
+            SubButton.Outer.Size = UDim2.new(1, -3, 1, 0)--UDim2.fromOffset(self.Outer.AbsoluteSize.X - 2, self.Outer.AbsoluteSize.Y)
             SubButton.Outer.Parent = self.Outer
 
             function SubButton:AddTooltip(tooltip)
@@ -1720,6 +1810,8 @@ do
             TextSize = 14;
             TextStrokeTransparency = 0;
             TextXAlignment = Enum.TextXAlignment.Left;
+
+            ClearTextOnFocus = (typeof(Info.ClearTextOnFocus) ~= "boolean" and true or Info.ClearTextOnFocus);
 
             ZIndex = 7;
             Parent = Container;
@@ -1994,6 +2086,10 @@ do
             Parent = Container;
         });
 
+        SliderOuter:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
+            Slider.MaxSize = SliderOuter.AbsoluteSize.X - 2;
+        end);
+
         Library:AddToRegistry(SliderOuter, {
             BorderColor3 = 'Black';
         });
@@ -2059,7 +2155,7 @@ do
             Fill.BackgroundColor3 = Library.AccentColor;
             Fill.BorderColor3 = Library.AccentColorDark;
         end;
-
+        
         function Slider:Display()
             local Suffix = Info.Suffix or '';
 
@@ -2071,10 +2167,11 @@ do
                 DisplayLabel.Text = string.format('%s/%s', Slider.Value .. Suffix, Slider.Max .. Suffix);
             end
 
-            local X = math.ceil(Library:MapValue(Slider.Value, Slider.Min, Slider.Max, 0, Slider.MaxSize));
-            Fill.Size = UDim2.new(0, X, 1, 0);
+            local X = Library:MapValue(Slider.Value, Slider.Min, Slider.Max, 0, 1);
+            Fill.Size = UDim2.new(X, 0, 1, 0);
 
-            HideBorderRight.Visible = not (X == Slider.MaxSize or X == 0);
+            -- I have no idea what this is
+            HideBorderRight.Visible = not (X == 1 or X == 0);
         end;
 
         function Slider:OnChanged(Func)
@@ -2087,12 +2184,27 @@ do
                 return math.floor(Value);
             end;
 
-
             return tonumber(string.format('%.' .. Slider.Rounding .. 'f', Value))
         end;
 
-        function Slider:GetValueFromXOffset(X)
-            return Round(Library:MapValue(X, 0, Slider.MaxSize, Slider.Min, Slider.Max));
+        function Slider:GetValueFromXScale(X)
+            return Round(Library:MapValue(X, 0, 1, Slider.Min, Slider.Max));
+        end;
+        
+        function Slider:SetMax(Value)
+            assert(Value > Slider.Min, 'Max value cannot be less than the current min value.');
+            
+            Slider.Value = math.clamp(Slider.Value, Slider.Min, Value);
+            Slider.Max = Value;
+            Slider:Display();
+        end;
+        
+        function Slider:SetMin(Value)
+            assert(Value < Slider.Max, 'Min value cannot be greater than the current max value.');
+
+            Slider.Value = math.clamp(Slider.Value, Value, Slider.Max);
+            Slider.Min = Value;
+            Slider:Display();
         end;
 
         function Slider:SetValue(Str)
@@ -2114,14 +2226,15 @@ do
         SliderInner.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
                 local mPos = Mouse.X;
-                local gPos = Fill.Size.X.Offset;
+                local gPos = Fill.AbsoluteSize.X;
                 local Diff = mPos - (Fill.AbsolutePosition.X + gPos);
 
                 while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
                     local nMPos = Mouse.X;
-                    local nX = math.clamp(gPos + (nMPos - mPos) + Diff, 0, Slider.MaxSize);
+                    local nXOffset = math.clamp(gPos + (nMPos - mPos) + Diff, 0, Slider.MaxSize); -- what in tarnation are these variable names
+                    local nXScale = Library:MapValue(nXOffset, 0, Slider.MaxSize, 0, 1);
 
-                    local nValue = Slider:GetValueFromXOffset(nX);
+                    local nValue = Slider:GetValueFromXScale(nXScale);
                     local OldValue = Slider.Value;
                     Slider.Value = nValue;
 
@@ -2278,7 +2391,8 @@ do
         end;
 
         local function RecalculateListSize(YSize)
-            ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, YSize or (MAX_DROPDOWN_ITEMS * 20 + 2))
+            local Y = YSize or math.clamp(#Dropdown.Values * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
+            ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X + 0.5, Y)
         end;
 
         RecalculateListPosition();
@@ -2371,7 +2485,6 @@ do
             end;
 
             local Count = 0;
-
             for Idx, Value in next, Values do
                 local Table = {};
 
@@ -2474,6 +2587,11 @@ do
 
             Scrolling.CanvasSize = UDim2.fromOffset(0, (Count * 20) + 1);
 
+            -- Workaround for silly roblox bug - not sure why it happens but sometimes the dropdown list will be empty
+            -- ... and for some reason refreshing the Visible property fixes the issue??????? thanks roblox!
+            Scrolling.Visible = false;
+            Scrolling.Visible = true;
+
             local Y = math.clamp(Count * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
             RecalculateListSize(Y);
         end;
@@ -2490,6 +2608,8 @@ do
             ListOuter.Visible = true;
             Library.OpenedFrames[ListOuter] = true;
             DropdownArrow.Rotation = 180;
+            
+            RecalculateListSize();
         end;
 
         function Dropdown:CloseDropdown()
@@ -2951,26 +3071,30 @@ function Library:CreateWindow(...)
     if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(550, 600) end
 
     if Config.Center then
-        Config.AnchorPoint = Vector2.new(0.5, 0.5)
-        Config.Position = UDim2.fromScale(0.5, 0.5)
+        -- Config.AnchorPoint = Vector2.new(0.5, 0.5)
+        Config.Position = UDim2.new(0.5, -Config.Size.X.Offset/2, 0.5, -Config.Size.Y.Offset/2)
     end
-
+    
     local Window = {
         Tabs = {};
     };
 
     local Outer = Library:Create('Frame', {
-        AnchorPoint = Config.AnchorPoint,
+        AnchorPoint = Config.AnchorPoint;
         BackgroundColor3 = Color3.new(0, 0, 0);
         BorderSizePixel = 0;
-        Position = Config.Position,
-        Size = Config.Size,
+        Position = Config.Position;
+        Size = Config.Size;
         Visible = false;
         ZIndex = 1;
         Parent = ScreenGui;
     });
 
     Library:MakeDraggable(Outer, 25);
+
+    if Config.Resizable then
+        Library:MakeResizable(Outer, Library.MinSize);
+    end
 
     local Inner = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
@@ -3115,7 +3239,7 @@ function Library:CreateWindow(...)
             BackgroundTransparency = 1;
             BorderSizePixel = 0;
             Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
-            Size = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
+            Size = UDim2.new(0.5, -12 + 2, 1, -14);
             CanvasSize = UDim2.new(0, 0, 0, 0);
             BottomImage = '';
             TopImage = '';
@@ -3128,7 +3252,7 @@ function Library:CreateWindow(...)
             BackgroundTransparency = 1;
             BorderSizePixel = 0;
             Position = UDim2.new(0.5, 4 + 1, 0, 8 - 1);
-            Size = UDim2.new(0.5, -12 + 2, 0, 507 + 2);
+            Size = UDim2.new(0.5, -12 + 2, 1, -14);
             CanvasSize = UDim2.new(0, 0, 0, 0);
             BottomImage = '';
             TopImage = '';
