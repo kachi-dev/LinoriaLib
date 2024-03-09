@@ -2771,7 +2771,17 @@ do
                     Holder.Visible = false;
                     Depbox:Resize();
                     return;
-                end;
+				if Elem.Type == 'Dropdown' then
+					if Elem.Multi and not Elem.Value[Value] then
+						Holder.Visible = false
+						Depbox:Resize()
+						return
+					elseif (not Elem.Multi) and Elem.Value ~= Value then
+						Holder.Visible = false
+						Depbox:Resize()
+						return
+					end
+            	end;
             end;
 
             Holder.Visible = true;
