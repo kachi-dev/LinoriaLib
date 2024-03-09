@@ -2579,6 +2579,7 @@ do
 
                             Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
                             Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
+                            Library:UpdateDependencyBoxes();
 
                             Library:AttemptSave(Dropdown);
                         end;
@@ -2717,6 +2718,8 @@ do
         Groupbox:Resize();
 
         Options[Idx] = Dropdown;
+
+        Library:UpdateDependencyBoxes();
 
         return Dropdown;
     end;
