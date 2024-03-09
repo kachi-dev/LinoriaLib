@@ -1823,17 +1823,12 @@ do
         Library:ApplyTextStroke(Box);
 
         function Textbox:SetValue(Text)
-            -- Debugging strange issue
-
-            warn(Text, tonumber(Text))
-            
             if Info.MaxLength and #Text > Info.MaxLength then
                 Text = Text:sub(1, Info.MaxLength);
             end;
 
             if Textbox.Numeric then
                 if (not tonumber(Text)) and Text:len() > 0 then
-                    warn('Here')
                     Text = Textbox.Value
                 end
             end
