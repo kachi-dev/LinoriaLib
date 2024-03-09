@@ -1825,7 +1825,7 @@ do
         function Textbox:SetValue(Text)
             -- Debugging strange issue
 
-            warn(Text, tonumber(Text), Text:len())
+            warn(Text, tonumber(Text))
             
             if Info.MaxLength and #Text > Info.MaxLength then
                 Text = Text:sub(1, Info.MaxLength);
