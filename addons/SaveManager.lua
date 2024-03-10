@@ -126,8 +126,6 @@ local SaveManager = {} do
 		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
 		if not success then return false, 'decode error' end
 
-		SaveManager.Changes = decoded.objects
-
 		for _, option in next, decoded.objects do
 			if self.Parser[option.type] then
 				warn(option.idx, option.value)
@@ -136,6 +134,8 @@ local SaveManager = {} do
 				print(option.idx, 'has no parser of type', option.type)
 			end
 		end
+
+		SaveManager.Changes = decoded.objects
 
 		return true
 	end
