@@ -87,7 +87,7 @@ local SaveManager = {} do
 		for Idx = #SaveManager.Changes, 1, -1 do
 			local Change = SaveManager.Changes[Idx]
 
-			if Change.Type == Object.Type and Change.Name == Object.Name then
+			if Change.type == Object.Type and Change.idx == Object.Name then
 				table.remove(SaveManager.Changes, Idx)
 			end
 		end
